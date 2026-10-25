@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daily Grind · Café Manager</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header><a class="brand" href="/">☕ Daily Grind <span>CAFÉ MANAGER</span></a><span class="badge">Your café, in order.</span></header>
+<main><div class="intro"><div><p class="eyebrow">THE DAILY DASHBOARD</p><h1>A good day starts here.</h1><p>Fresh brews. Happy tables. Everything running smoothly.</p></div><span id="date"></span></div>
+<section class="stats" aria-label="Sales overview"><article><span>Completed sales · all time</span><strong id="revenue">₹0</strong></article><article><span>Active orders</span><strong id="active">0</strong></article><article><span>Completed orders</span><strong id="completed">0</strong></article></section>
+<div class="workspace"><section class="panel"><div class="section-heading"><h2>Make something good</h2><span>THE MENU</span></div><div id="menu" class="menu"></div><form id="order-form"><h3>Current order</h3><div id="cart"></div><label for="customer">Customer or table</label><input id="customer" maxlength="80" required placeholder="e.g. Table 04 / Alex"><div class="total"><span>Total</span><strong id="total">₹0</strong></div><button class="primary" id="submit" type="submit">Place order →</button></form></section>
+<section class="panel"><div class="section-heading"><h2>Order board</h2><button id="refresh" class="text-button">Refresh</button></div><p class="subtle">Follow every order from first sip to last bite.</p><div id="orders"></div></section></div>
+<p id="message" role="status" aria-live="polite"></p><footer>DAILY GRIND <span>Made for the little moments that matter.</span></footer></main><script src="/app.js"></script></body></html>
