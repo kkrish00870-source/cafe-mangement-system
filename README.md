@@ -21,3 +21,16 @@ python -m unittest discover -s tests -v
 ```
 
 Tests use a temporary database and exercise the real HTTP server, validation, totals, transitions, and persistence. This is a single-user development app without authentication; keep it on a trusted local network. Authentication and deployment hardening are required before public use.
+
+## Deploy to Render
+
+This repository includes a Render Blueprint (`render.yaml`) for a Python web service with a 1 GB persistent disk. **It uses a paid Starter service and paid storage.** Review the price in Render before approving creation; the free service does not preserve the SQLite database across deployments.
+
+1. Sign in at https://dashboard.render.com/ and choose **New → Blueprint**.
+2. Connect GitHub and select `kkrish00870-source/cafe-mangement-system`, branch `main`.
+3. Review the service and disk, then create the Blueprint.
+4. Once deployed, open the service URL shown by Render. Sign in with username `admin` and the generated `CAFE_PASSWORD` from the service's Environment settings. Keep this password private; you can replace it securely in Render.
+
+Render supplies HTTPS and PORT. HOST binds the server to all interfaces. `/healthz` provides an unauthenticated database readiness check; the dashboard, static assets, and API require HTTP Basic authentication when CAFE_PASSWORD is set. On Render, missing CAFE_PASSWORD blocks application access. Local development remains password-free unless you set CAFE_PASSWORD. Do not expose Basic authentication over plain HTTP outside localhost.
+
+This is a lightweight prototype built with Python's standard-library HTTP server, which is not recommended for production use. The password gate provides shared access, not per-user roles or auditing. Before using it for business-critical operations, migrate to a production application server and add database backups, user accounts, and operational monitoring. Persistent storage survives deployments but is not a backup.

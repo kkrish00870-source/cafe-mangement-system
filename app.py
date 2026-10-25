@@ -1,4 +1,6 @@
 """Small café management server. Run with Python 3.12 or newer."""
+import base64
+import hmac
 import json
 import os
 import sqlite3
@@ -48,8 +50,35 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def authorized(self):
+        password = os.environ.get('CAFE_PASSWORD')
+        if not password:
+            if os.environ.get('RENDER'):
+                self.reply({'error': 'Set CAFE_PASSWORD before serving on Render'}, 503)
+                return False
+            return True
+        expected = os.environ.get('CAFE_USERNAME', 'admin') + ':' + password
+        try:
+            scheme, token = self.headers.get('Authorization', '').split(' ', 1)
+            supplied = base64.b64decode(token, validate=True).decode('utf-8')
+            valid = scheme.lower() == 'basic' and hmac.compare_digest(supplied.encode(), expected.encode())
+        except (ValueError, UnicodeError):
+            valid = False
+        if not valid:
+            self.send_response(401)
+            self.send_header('WWW-Authenticate', 'Basic realm="Daily Grind", charset="UTF-8"')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+        return valid
+
     def do_GET(self):
         path = urlsplit(self.path).path
+        if path == '/healthz':
+            with connect() as db:
+                db.execute('SELECT 1 FROM menu LIMIT 1').fetchone()
+            return self.reply({'status': 'ok'})
+        if not self.authorized():
+            return
         if path == '/api/state':
             with connect() as db:
                 menu = [dict(row) for row in db.execute('SELECT * FROM menu ORDER BY id')]
@@ -63,6 +92,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
+        if not self.authorized():
+            return
         try:
             length = int(self.headers.get('Content-Length', 0))
             if not 0 < length <= 65536:

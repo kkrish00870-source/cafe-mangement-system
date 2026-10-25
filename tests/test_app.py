@@ -1,4 +1,7 @@
+import base64
 import json
+import os
+from unittest.mock import patch
 import tempfile
 import threading
 import unittest
@@ -58,6 +61,30 @@ class CafeTest(unittest.TestCase):
         for payload in ({}, {'customer': 'A', 'items': []}, {'customer': 'A', 'items': [{'id': 999, 'quantity': 1}]}, {'customer': 'A', 'items': [{'id': 1, 'quantity': -1}]}, {'customer': 'A', 'items': [{'id': 1, 'quantity': True}]}):
             self.assertEqual(self.call('/api/orders', payload)[0], 400)
         self.assertEqual(self.call('/api/state')[1]['orders'], before)
+
+    def test_password_protection(self):
+        with patch.dict(os.environ, {'CAFE_PASSWORD': 'test-only-password', 'CAFE_USERNAME': 'admin'}):
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(self.base + '/api/state')
+            self.assertEqual(caught.exception.code, 401)
+            self.assertIn('Basic', caught.exception.headers['WWW-Authenticate'])
+            caught.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(self.base + '/app.js')
+            self.assertEqual(caught.exception.code, 401)
+            caught.exception.close()
+            token = base64.b64encode(b'admin:test-only-password').decode()
+            req = urllib.request.Request(self.base + '/api/state', headers={'Authorization': 'Basic ' + token})
+            with urllib.request.urlopen(req) as response:
+                self.assertTrue(json.load(response)['menu'])
+            with urllib.request.urlopen(self.base + '/healthz') as response:
+                self.assertEqual(json.load(response), {'status': 'ok'})
+            with self.assertRaises(urllib.error.HTTPError) as caught:
+                urllib.request.urlopen(urllib.request.Request(self.base + '/api/orders', data=b'{}'))
+            self.assertEqual(caught.exception.code, 401)
+            caught.exception.close()
+        with patch.dict(os.environ, {'RENDER': 'true', 'CAFE_PASSWORD': ''}):
+            self.assertEqual(self.call('/api/state')[0], 503)
 
     def test_static_page_and_not_found(self):
         with urllib.request.urlopen(self.base + '/') as response:

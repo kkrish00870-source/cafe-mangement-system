@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: daily-grind-cafe
+    runtime: python
+    plan: starter
+    buildCommand: python --version
+    startCommand: python app.py
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.12
+      - key: HOST
+        value: 0.0.0.0
+      - key: CAFE_DB
+        value: /var/data/cafe.db
+      - key: CAFE_USERNAME
+        value: admin
+      - key: CAFE_PASSWORD
+        generateValue: true
+    disk:
+      name: cafe-data
+      mountPath: /var/data
+      sizeGB: 1
